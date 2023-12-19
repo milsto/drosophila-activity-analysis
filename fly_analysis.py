@@ -8,6 +8,9 @@ from scipy.signal import butter, sosfilt
 
 NUM_ROWS_FOR_IMAGE = 6
 NUM_COLS_FOR_IMAGE = 4
+SAMPLING_PERIOD = 900  # in seconds - 30 for original rate, 900 for vanessa equivalence (min 30)
+SKIP_DAYS = 2  # If 2 => skip frist two days, start from third day
+LAST_FULL_DAY = 10  # if 10 => ends after full 10 days
 results_path = "results.xlsx"
 folder_path = "data/"
 
@@ -65,7 +68,7 @@ for file_name in os.listdir(folder_path):
         data = np.insert(data, index, values)
 
         # Skip first 2 days
-        data = data[2880*2:2880*10]
+        data = data[2880*SKIP_DAYS:2880*LAST_FULL_DAY]
 
         # Filtering the data
         sos = butter(2, 1/(4*60*68), "low", output="sos", fs=1/30)
@@ -76,9 +79,10 @@ for file_name in os.listdir(folder_path):
         autocorr = np.fft.ifft(np.abs(np.fft.fft(data))**2).real
 
         # data = resample(data, len(data) // 30)
-        data = data.reshape(-1, 30).mean(axis=-1)
+        if SAMPLING_PERIOD > 30:
+            data = data.reshape(-1, SAMPLING_PERIOD // 30).mean(axis=-1)
 
-        chip = chi_sq_periodogram(data, sampling_rate=1/900, alpha=0.05)
+        chip = chi_sq_periodogram(data, sampling_rate=1.0/SAMPLING_PERIOD, alpha=0.05)
         amax_idx = np.argmax(chip["power"])
         chip_period = chip["period"][amax_idx] / 60. / 60. if amax_idx > 0 else -1.0
         chip_power = np.max(chip["power"]) - chip["signif_threshold"][amax_idx] if amax_idx > 0 else -1.0
@@ -126,7 +130,7 @@ for file_name in os.listdir(folder_path):
     print()
 
 df_results = pd.DataFrame(results)
-df_results['mean'] = df_results.mean(axis=1)
-df_results['std'] = df_results.std(axis=1)
-df_results['median'] = df_results.median(axis=1)
+df_results['mean'] = df_results[df_results > 0].mean(axis=1)
+df_results['std'] = df_results[df_results > 0].std(axis=1)
+df_results['median'] = df_results[df_results > 0].median(axis=1)
 df_results.to_excel(results_path)
