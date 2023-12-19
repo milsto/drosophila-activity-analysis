@@ -44,6 +44,10 @@ for file_name in os.listdir(folder_path):
     fig2, axs2 = plt.subplots(nrows=NUM_ROWS_FOR_IMAGE, ncols=NUM_COLS_FOR_IMAGE, figsize=(4*20, 20))
     fig3, axs3 = plt.subplots(nrows=NUM_ROWS_FOR_IMAGE, ncols=NUM_COLS_FOR_IMAGE, figsize=(4*20, 20))
 
+    plt.figure(figsize=(80, 20))
+    plt.plot(df["TEMPERATURE"])
+    plt.savefig(f"{os.path.basename(file_name)}_temperature.png")
+    plt.close()
 
     # replace above 99.5 percentil with the 99.5 percentil
     for i, col in enumerate(list(df.columns[7:])):
@@ -76,8 +80,8 @@ for file_name in os.listdir(folder_path):
 
         chip = chi_sq_periodogram(data, sampling_rate=1/900, alpha=0.05)
         amax_idx = np.argmax(chip["power"])
-        chip_period = chip["period"][amax_idx] / 60. / 60.
-        chip_power = np.max(chip["power"]) - chip["signif_threshold"][amax_idx]
+        chip_period = chip["period"][amax_idx] / 60. / 60. if amax_idx > 0 else -1.0
+        chip_power = np.max(chip["power"]) - chip["signif_threshold"][amax_idx] if amax_idx > 0 else -1.0
 
         # print(chip["period"][np.argmax(chip["power"])] / 60. / 60.)
 
@@ -99,21 +103,21 @@ for file_name in os.listdir(folder_path):
         results[col][file_name + "_peak_power_relative"] = peak_power_relative
         results[col][file_name + "chip_power"] = chip_power
 
-        axs[i // 4, i % 4].plot(chip["period"] / 60 / 60, chip["power"])
-        axs[i // 4, i % 4].plot(chip["period"] / 60 / 60, chip["signif_threshold"])
-        axs[i // 4, i % 4].set_xlabel("Period")
-        axs[i // 4, i % 4].set_ylabel("Power")
-        axs[i // 4, i % 4].set_title(col)
+        axs[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].plot(chip["period"] / 60 / 60, chip["power"])
+        axs[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].plot(chip["period"] / 60 / 60, chip["signif_threshold"])
+        axs[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].set_xlabel("Period")
+        axs[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].set_ylabel("Power")
+        axs[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].set_title(col)
 
-        axs2[i // 4, i % 4].plot(data)
-        axs2[i // 4, i % 4].set_xlabel("Period")
-        axs2[i // 4, i % 4].set_ylabel("Power")
-        axs2[i // 4, i % 4].set_title(col)
+        axs2[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].plot(data)
+        axs2[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].set_xlabel("Period")
+        axs2[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].set_ylabel("Power")
+        axs2[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].set_title(col)
 
-        axs3[i // 4, i % 4].plot(data_filtered)
-        axs3[i // 4, i % 4].set_xlabel("Period")
-        axs3[i // 4, i % 4].set_ylabel("Power")
-        axs3[i // 4, i % 4].set_title(col)
+        axs3[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].plot(data_filtered)
+        axs3[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].set_xlabel("Period")
+        axs3[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].set_ylabel("Power")
+        axs3[i // NUM_COLS_FOR_IMAGE, i % NUM_COLS_FOR_IMAGE].set_title(col)
     
     fig.savefig(f"{os.path.basename(file_name)}.png")
     fig2.savefig(f"{os.path.basename(file_name)}_data.png")
